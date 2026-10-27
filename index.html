@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en" data-engine="browser">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Nothing may be loaded from or sent to any other address: the calculator is fully offline.
+       'unsafe-eval': graph functions (graph.js) and Pyodide; 'unsafe-inline': the theme script
+       below and, in the Android app, Capacitor's bridge. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; worker-src 'self' blob:; media-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <title>Math Calculator</title>
+  <script>
+    // The chosen theme, applied before anything is drawn (no flash of the other theme).
+    try {
+      const t = JSON.parse(localStorage.getItem('mathcalc.theme'));
+      if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+    } catch (e) { /* storage unavailable: follow the system */ }
+  </script>
+  <link rel="icon" href="static/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="static/vendor/mathlive/mathlive-fonts.css">
+  <link rel="stylesheet" href="static/vendor/mathlive/mathlive-static.css">
+  <link rel="stylesheet" href="static/css/app.css">
+  <script src="static/vendor/plotly/plotly.min.js" defer></script>
+  <script type="module" src="static/js/app.js"></script>
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#2f5bea">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-title" content="Calculator">
+  <script>
+    // Offline support (sw.js), except in the Android app, which has its files on the phone.
+    if ('serviceWorker' in navigator && !window.Capacitor && location.hostname !== 'localhost') {
+      navigator.serviceWorker.register('sw.js');
+    }
+  </script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="logo">∑</span> <span class="brand-name">Math Calculator</span></div>
+    <div class="mode-toggle" role="group" aria-label="Input mode">
+      <button type="button" data-mode="latex" class="active" title="Visual math editor">Visual</button>
+      <button type="button" data-mode="plain" title="Plain text input">Plain text</button>
+    </div>
+    <div class="topbar-right">
+      <button type="button" id="history-toggle" class="icon-btn" title="Show/hide history">History</button>
+      <button type="button" id="settings-toggle" class="icon-btn" title="Settings">Settings</button>
+    </div>
+  </header>
+
+  <div id="settings-panel" class="settings-panel" hidden>
+    <label>Decimal places
+      <input type="number" id="set-decimals" min="1" max="15" value="4">
+    </label>
+    <label>Time limit (seconds)
+      <input type="number" id="set-timeout" min="1" max="600" value="10">
+    </label>
+    <label>Theme
+      <select id="set-theme">
+        <option value="auto">Automatic (as the system)</option>
+        <option value="light">Light</option>
+        <option value="dark">Dark</option>
+      </select>
+    </label>
+    <p class="muted">A bare <code>log</code> means base 10. Use <code>ln</code> for the natural logarithm.</p>
+  </div>
+
+  <div class="layout">
+    <aside id="history" class="history">
+      <div class="history-head">
+        <h2>History</h2>
+        <button type="button" id="history-clear" class="link-btn" title="Delete all history">Clear</button>
+      </div>
+      <input type="search" id="history-search" placeholder="Search history…" aria-label="Search history">
+      <ol id="history-list" class="history-list"></ol>
+      <p id="history-empty" class="muted history-empty">Nothing yet. Every calculation is saved here.</p>
+    </aside>
+
+    <main class="main">
+      <nav id="tabs" class="tabs" role="tablist"></nav>
+      <section class="workspace">
+        <p id="tab-description" class="tab-description"></p>
+        <div id="examples" class="examples"></div>
+
+        <div id="editor-visual" class="editor-visual">
+          <div id="toolbar" class="toolbar" aria-label="Insert math"></div>
+          <div id="mf-lines" class="mf-lines"></div>
+          <button type="button" id="add-line" class="link-btn add-line">+ Add line</button>
+        </div>
+
+        <div id="editor-plain" class="editor-plain" hidden>
+          <textarea id="plain-input" rows="4" spellcheck="false" autocomplete="off"
+                    placeholder="Type here, e.g.  sqrt(7)   or   f(x) = x^2 + 1   then   f(3)"></textarea>
+          <details class="syntax-help">
+            <summary>Plain-text syntax</summary>
+            <div id="syntax-help-body"></div>
+          </details>
+        </div>
+
+        <div id="tab-options" class="tab-options"></div>
+
+        <div class="actions">
+          <button type="button" id="calculate" class="primary">Calculate</button>
+          <button type="button" id="stop" class="secondary" hidden>Stop</button>
+          <span id="status" class="status" aria-live="polite"></span>
+          <span class="muted hint-keys">Enter = calculate · Shift+Enter = new line</span>
+        </div>
+        <div id="convert-notice" class="notice" hidden></div>
+      </section>
+
+      <section id="results" class="results" aria-live="polite"></section>
+    </main>
+  </div>
+</body>
+</html>

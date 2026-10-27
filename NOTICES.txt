@@ -1,0 +1,20 @@
+Math Calculator: third-party software
+
+The web version and the Android app include these components, unmodified:
+
+Pyodide 314.0.7 (Python 3.14 compiled to WebAssembly)
+  Mozilla Public License 2.0; Python itself: PSF License 2.0
+  https://github.com/pyodide/pyodide
+
+SymPy 1.14.0             BSD 3-Clause    https://github.com/sympy/sympy
+mpmath 1.4.1             BSD 3-Clause    https://github.com/mpmath/mpmath
+NumPy 2.4.6              BSD 3-Clause    https://github.com/numpy/numpy
+gmpy2 2.3.0              LGPL 3.0 or later (with GMP and MPFR, LGPL 3.0 or later)
+                                         https://github.com/aleaxit/gmpy
+MathLive 0.111.1         MIT             https://github.com/arnog/mathlive
+Plotly.js 4.1.2          MIT             https://github.com/plotly/plotly.js
+
+The full license texts are in the components' own packages: the Python packages' .whl
+files under pyodide/ (in their .dist-info folders), static/vendor/mathlive/LICENSE.txt,
+and the header of static/vendor/plotly/plotly.min.js. Each project's source code is at
+the address above.
