@@ -3,6 +3,7 @@ import { api } from './api.js';
 import { Editor } from './editor.js';
 import { redrawAllGraphs } from './graph.js';
 import { HistoryPanel } from './history.js';
+import { LANG, LANG_SETTING, t, tf, translatePage } from './i18n.js';
 import { redrawAllNumberLines } from './numberline.js';
 import { el, renderResponse } from './render.js';
 import { SYNTAX_HELP, TABS } from './tabs.js';
@@ -36,6 +37,7 @@ const state = {
 };
 if (!TABS.some((t) => t.id === state.tab)) state.tab = TABS[0].id;
 
+translatePage();
 const $ = (id) => document.getElementById(id);
 const resultsBox = $('results');
 const statusBox = $('status');
@@ -59,6 +61,7 @@ function settings() {
   return {
     decimals: clampInt($('set-decimals').value, 1, 15, 4),
     timeout: clampInt($('set-timeout').value, 1, 600, DEFAULT_TIMEOUT),
+    lang: LANG,
   };
 }
 function clampInt(v, lo, hi, dflt) {
@@ -74,6 +77,11 @@ for (const id of ['set-decimals', 'set-timeout']) {
     store.set('timeout', s.timeout);
   });
 }
+$('set-lang').value = LANG_SETTING;
+$('set-lang').addEventListener('change', () => {
+  store.set('lang', $('set-lang').value);
+  location.reload();
+});
 $('settings-toggle').addEventListener('click', () => { $('settings-panel').hidden = !$('settings-panel').hidden; });
 
 // Theme: automatic (follows the system), light or dark. index.html applies the saved choice early.
@@ -98,18 +106,18 @@ window.matchMedia?.('(prefers-color-scheme: dark)').addEventListener?.('change',
 // -------------------------------------------------------------------- tabs
 function renderTabs() {
   const nav = $('tabs');
-  nav.replaceChildren(...TABS.map((t) => {
-    const b = el('button', { type: 'button', role: 'tab', class: t.id === state.tab ? 'active' : '' }, t.label);
-    b.addEventListener('click', () => selectTab(t.id));
+  nav.replaceChildren(...TABS.map((tab) => {
+    const b = el('button', { type: 'button', role: 'tab', class: tab.id === state.tab ? 'active' : '' }, t(tab.label));
+    b.addEventListener('click', () => selectTab(tab.id));
     return b;
   }));
   nav.querySelector('.active')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });  // phones scroll the tab row
-  const tab = TABS.find((t) => t.id === state.tab);
-  $('tab-description').textContent = tab.description;
+  const tab = TABS.find((x) => x.id === state.tab);
+  $('tab-description').textContent = t(tab.description);
   renderOptions();
   const ex = $('examples');
-  ex.replaceChildren(el('span', { class: 'label' }, 'Examples:'), ...tab.examples.map((e) => {
-    const chip = el('button', { type: 'button', class: 'chip', title: e.plain }, e.title);
+  ex.replaceChildren(el('span', { class: 'label' }, t('Examples:')), ...tab.examples.map((e) => {
+    const chip = el('button', { type: 'button', class: 'chip', title: e.plain }, t(e.title));
     chip.addEventListener('click', () => {
       if (e.options) {
         // The example also sets the tab's options (e.g. "solutions wanted").
@@ -138,12 +146,12 @@ function renderOptions() {
   const box = $('tab-options');
   const saved = store.get('options.' + tab.id, {});
   box.replaceChildren(...(tab.options ?? []).map((o) => {
-    const input = el('input', { type: 'text', id: 'opt-' + o.id, placeholder: o.placeholder ?? '',
+    const input = el('input', { type: 'text', id: 'opt-' + o.id, placeholder: t(o.placeholder ?? ''),
       size: o.size ?? 7, spellcheck: 'false' });
     input.value = saved[o.id] ?? '';
     input.addEventListener('change', () => store.set('options.' + tab.id, tabOptions()));
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') calculate(); });
-    return el('label', { class: 'opt' }, o.label, input);
+    return el('label', { class: 'opt' }, t(o.label), input);
   }));
 }
 
@@ -174,11 +182,11 @@ async function switchMode(mode) {
     const r = await api.convert(text, from);
     if (r.ok) converted = from === 'latex' ? r.plain : r.latex.join('\n');
     else {
-      notice.textContent = `Couldn't convert your input: ${r.error.message} The other editor keeps its previous content.`;
+      notice.textContent = tf("Couldn't convert your input: {} The other editor keeps its previous content.", r.error.message);
       notice.hidden = false;
     }
   } catch {
-    notice.textContent = "Couldn't convert your input (server not reachable).";
+    notice.textContent = t("Couldn't convert your input (server not reachable).");
     notice.hidden = false;
   }
   editor.showMode(mode);
@@ -195,7 +203,7 @@ async function calculate() {
   const input = editor.getInput();
   notice.hidden = true;
   if (!input.trim()) {
-    statusBox.textContent = 'Type something first.';
+    statusBox.textContent = t('Type something first.');
     return;
   }
   setRunning(true);
@@ -209,10 +217,10 @@ async function calculate() {
       return r.ok ? r.graph : null;
     };
     renderResponse(resultsBox, resp, { refetch });
-    statusBox.textContent = resp.elapsed_ms !== undefined ? `Done in ${formatMs(resp.elapsed_ms)}.` : '';
+    statusBox.textContent = resp.elapsed_ms !== undefined ? tf('Done in {}.', formatMs(resp.elapsed_ms)) : '';
     statusBox.dataset.engine = '';
   } catch (e) {
-    renderResponse(resultsBox, { ok: false, error: { kind: 'internal', message: `Could not reach the calculator: ${e.message}` } });
+    renderResponse(resultsBox, { ok: false, error: { kind: 'internal', message: tf('Could not reach the calculator: {}', e.message) } });
     statusBox.textContent = '';
   } finally {
     setRunning(false);
@@ -222,7 +230,7 @@ async function calculate() {
 }
 
 function formatMs(ms) {
-  return ms < 1000 ? `${ms} ms` : `${(ms / 1000).toFixed(1)} s`;
+  return ms < 1000 ? tf('{} ms', ms) : tf('{} s', (ms / 1000).toFixed(1));
 }
 
 function setRunning(on) {
@@ -232,7 +240,7 @@ function setRunning(on) {
   clearInterval(state.timer);
   if (on) {
     const t0 = Date.now();
-    const what = () => (api.engine?.state === 'loading' ? api.engine.detail : 'Calculating…');
+    const what = () => (api.engine?.state === 'loading' ? api.engine.detail : t('Calculating…'));
     statusBox.textContent = what();
     state.timer = setInterval(() => {
       statusBox.textContent = `${what()} ${Math.floor((Date.now() - t0) / 1000)} s`;
@@ -244,8 +252,8 @@ function setRunning(on) {
 function showEngineState(engineState, detail) {
   if (state.running) return;
   if (engineState === 'loading') statusBox.textContent = detail;
-  else if (engineState === 'failed') statusBox.textContent = `The math engine could not start: ${detail}`;
-  else if (statusBox.dataset.engine === 'loading') statusBox.textContent = 'Ready.';
+  else if (engineState === 'failed') statusBox.textContent = tf('The math engine could not start: {}', detail);
+  else if (statusBox.dataset.engine === 'loading') statusBox.textContent = t('Ready.');
   statusBox.dataset.engine = engineState;
 }
 
@@ -267,7 +275,7 @@ function loadEntry(it, run) {
 }
 
 // --------------------------------------------------------------- syntax help
-$('syntax-help-body').append(el('table', {}, SYNTAX_HELP.map(([a, b]) => el('tr', {}, el('td', {}, a), el('td', {}, b)))));
+$('syntax-help-body').append(el('table', {}, SYNTAX_HELP.map(([a, b]) => el('tr', {}, el('td', {}, a), el('td', {}, t(b))))));
 
 // -------------------------------------------------------------------- start
 editor.showMode(store.get('mode', 'latex'));

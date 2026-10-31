@@ -290,7 +290,7 @@ math-field:focus-within { outline: 2px solid var(--accent-soft); border-color: v
     --keycap-small-font-size: 15px;
     --keycap-max-width: 110px;
   }
-  math-field::part(menu-toggle) { display: none; }
+  math-field::part(menu-toggle) { display: none !important; }
   /* The two 7-column pages (editor.js PHONE_KEYBOARD) fill the width; the letter pages keep 10. */
   #mc-numbers, #mc-functions { --keycap-width: min(13.6cqw, 90px); }
 }

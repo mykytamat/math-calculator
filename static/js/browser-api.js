@@ -2,6 +2,8 @@
 // engine in a Web Worker (engine-worker.js), with the history kept in this browser's storage.
 // Mirrors app/main.py: tabs, time limit, Stop, partial results and the messages.
 
+import { LANG, t, tf } from './i18n.js';
+
 const TABS = new Set(['evaluate', 'piecewise', 'graph', 'equations', 'calculus', 'sequences', 'parameters', 'matrices']);
 const GRAPH_TABS = new Set(['piecewise', 'graph']);  // graphs re-sampled for a new view
 const MAX_TIMEOUT = 600;
@@ -39,7 +41,7 @@ function update(inst, state, detail = '') {
 
 function spawn() {
   const w = new Worker(new URL('./engine-worker.js', import.meta.url), { type: 'module' });
-  const inst = { worker: w, state: 'loading', detail: 'Starting the math engine…' };
+  const inst = { worker: w, state: 'loading', detail: t('Starting the math engine…') };
   inst.ready = new Promise((resolve, reject) => {
     const fail = (message) => {
       update(inst, 'failed', message);
@@ -47,15 +49,15 @@ function spawn() {
       if (inst === engine.spare) dropSpare();
     };
     w.onmessage = ({ data: m }) => {
-      if (m.type === 'progress') update(inst, 'loading', m.text);
+      if (m.type === 'progress') update(inst, 'loading', t(m.text));
       else if (m.type === 'ready') { update(inst, 'ready'); resolve(); }
       else if (m.type === 'failed') fail(m.message);
       else if (inst === engine.current) onJobMessage(m);
     };
     w.onerror = (ev) => {
       ev.preventDefault();
-      if (inst.state === 'loading') fail(ev.message || 'the engine did not load.');
-      else if (inst === engine.current) crashed('The math engine stopped.');
+      if (inst.state === 'loading') fail(ev.message || t('the engine did not load.'));
+      else if (inst === engine.current) crashed(t('The math engine stopped.'));
       else if (inst === engine.spare) dropSpare();
     };
   });
@@ -154,8 +156,8 @@ function withWarning(partial, message) {
 }
 
 function engineFailed(message) {
-  return fail('internal', `The math engine could not start: ${message}`,
-    { hint: 'Close and reopen the app. If it keeps happening, the device may be short of memory.' });
+  return fail('internal', tf('The math engine could not start: {}', message),
+    { hint: t('Close and reopen the app. If it keeps happening, the device may be short of memory.') });
 }
 
 // ------------------------------------------------------------------ calls
@@ -164,7 +166,7 @@ async function compute(body) {
   const mode = body.mode ?? 'plain';
   const input = body.input ?? '';
   const options = body.options ?? {};
-  if (!TABS.has(tab)) return { ok: false, error: { kind: 'internal', message: `Unknown tab '${tab}'.` } };
+  if (!TABS.has(tab)) return { ok: false, error: { kind: 'internal', message: tf("Unknown tab '{}'.", tab) } };
   const timeout = timeoutOf(options);
   const out = await runJob({ op: 'run', name: tab, payload: { input, mode, options } }, timeout);
   let result;
@@ -180,18 +182,17 @@ async function compute(body) {
   } else if (out.kind === 'timeout') {
     status = 'timeout';
     result = out.partial
-      ? withWarning(out.partial, `The exact solver ran out of time after ${timeout} s. The answers below come `
-        + 'from the fast numerical pass: they are numerical estimates.')
-      : fail('timeout', `Timed out after ${timeout} s, so the computation was stopped.`,
-        { hint: 'Try a simpler form of the problem, or raise the time limit in Settings.' });
+      ? withWarning(out.partial, tf('The exact solver ran out of time after {} s. The answers below come from the fast numerical pass: they are numerical estimates.', timeout))
+      : fail('timeout', tf('Timed out after {} s, so the computation was stopped.', timeout),
+        { hint: t('Try a simpler form of the problem, or raise the time limit in Settings.') });
   } else if (out.kind === 'cancelled') {
     status = 'cancelled';
     result = out.partial
-      ? withWarning(out.partial, 'Stopped. The answers below come from the fast numerical pass: they are numerical estimates.')
-      : fail('cancelled', 'Stopped.');
+      ? withWarning(out.partial, t('Stopped. The answers below come from the fast numerical pass: they are numerical estimates.'))
+      : fail('cancelled', t('Stopped.'));
   } else if (out.kind === 'crashed') {
     status = 'error';
-    result = fail('internal', 'The computation engine stopped unexpectedly (possibly out of memory).');
+    result = fail('internal', t('The computation engine stopped unexpectedly (possibly out of memory).'));
   } else {
     status = 'error';
     result = engineFailed(out.message);
@@ -203,21 +204,21 @@ async function compute(body) {
 
 async function graph(body) {
   const tab = body.tab;
-  if (!GRAPH_TABS.has(tab)) return { ok: false, error: { kind: 'internal', message: 'No graph here.' } };
+  if (!GRAPH_TABS.has(tab)) return { ok: false, error: { kind: 'internal', message: t('No graph here.') } };
   const options = { ...(body.options ?? {}), graph_only: true };
   const payload = { input: body.input ?? '', mode: body.mode ?? 'plain', options };
   const out = await runJob({ op: 'run', name: tab, payload }, timeoutOf(options));
   if (out.kind === 'ok' && out.value.internal_error === undefined) return out.value;
-  if (out.kind === 'timeout') return { ok: false, error: { kind: 'timeout', message: 'Re-drawing timed out.' } };
-  const message = out.kind === 'ok' ? out.value.internal_error.split('\n')[0] : out.message ?? 'Stopped.';
+  if (out.kind === 'timeout') return { ok: false, error: { kind: 'timeout', message: t('Re-drawing timed out.') } };
+  const message = out.kind === 'ok' ? out.value.internal_error.split('\n')[0] : out.message ?? t('Stopped.');
   return { ok: false, error: { kind: 'internal', message } };
 }
 
 async function convert(input, from) {
-  const out = await runJob({ op: 'convert', text: input, src: from }, 60);
+  const out = await runJob({ op: 'convert', text: input, src: from, lang: LANG }, 60);
   if (out.kind === 'ok') return out.value;
   if (out.kind === 'failed') return engineFailed(out.message);
-  return { ok: false, error: { kind: 'internal', message: 'The conversion did not finish.' } };
+  return { ok: false, error: { kind: 'internal', message: t('The conversion did not finish.') } };
 }
 
 async function cancel() {

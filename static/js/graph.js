@@ -7,6 +7,8 @@
 // jump, so no false vertical lines appear. "segments" traces (recursive
 // functions) are sampled by the server and re-fetched for a new view.
 
+import { t as tr, tf } from './i18n.js';
+
 const COLORS = ['#2f5bea', '#d6453d', '#1a9b5b', '#9b4dca', '#e08a00', '#0f8fa8', '#c2368f', '#6b7280'];
 const MAX_CUTS = 4000;
 
@@ -365,14 +367,14 @@ export class GraphView {
         out.push({
           type: 'scatter', mode: 'markers', x: closed.map((d) => d.x), y: closed.map((d) => d.y),
           marker: { color, size: 9, line: { color, width: 2 } }, showlegend: false,
-          hovertemplate: `${t.label}<br>(%{x:.6g}, %{y:.6g}) included<extra></extra>`,
+          hovertemplate: `${t.label}<br>(%{x:.6g}, %{y:.6g}) ${tr('included')}<extra></extra>`,
         });
       }
       if (open.length) {
         out.push({
           type: 'scatter', mode: 'markers', x: open.map((d) => d.x), y: open.map((d) => d.y),
           marker: { color: bg, size: 9, line: { color, width: 2 } }, showlegend: false,
-          hovertemplate: `${t.label}<br>(%{x:.6g}, %{y:.6g}) not included<extra></extra>`,
+          hovertemplate: `${t.label}<br>(%{x:.6g}, %{y:.6g}) ${tr('not included')}<extra></extra>`,
         });
       }
     });
@@ -459,7 +461,7 @@ export class GraphView {
   async render() {
     const Plotly = window.Plotly;
     if (!Plotly) {
-      this.container.textContent = 'The plotting library did not load.';
+      this.container.textContent = tr('The plotting library did not load.');
       return;
     }
     const y0 = this.initialYRange();
@@ -488,8 +490,8 @@ export class GraphView {
       row.className = 'slider-row';
       const name = document.createElement('span');
       name.className = 'pname'; name.textContent = p.name;
-      const lo = input('bound', p.min, `smallest ${p.name}`);
-      const hi = input('bound', p.max, `largest ${p.name}`);
+      const lo = input('bound', p.min, tf('smallest {}', p.name));
+      const hi = input('bound', p.max, tf('largest {}', p.name));
       const range = document.createElement('input');
       const step = niceStep(p.max - p.min);
       // Ends on multiples of the step, so round values such as a critical a = 1 can be reached.
@@ -498,8 +500,8 @@ export class GraphView {
       range.min = Math.min(snap(p.min), p.value); range.max = Math.max(snap(p.max), p.value);
       range.value = p.value;
       lo.value = range.min; hi.value = range.max;
-      range.setAttribute('aria-label', `parameter ${p.name}`);
-      const box = input('value', p.value, `value of ${p.name}`);
+      range.setAttribute('aria-label', tf('parameter {}', p.name));
+      const box = input('value', p.value, tf('value of {}', p.name));
       const set = (v, fromBox = false) => {
         if (!Number.isFinite(v)) return;
         this.pv[i] = v;
@@ -714,7 +716,7 @@ class SurfaceView extends GraphView {
       const mk = (end) => {
         const e = document.createElement('input');
         e.type = 'text'; e.spellcheck = false; e.className = 'bound';
-        e.title = `${end === 0 ? 'smallest' : 'largest'} ${axis}${auto ? ' (empty = automatic)' : ''}`;
+        e.title = tf(end === 0 ? 'smallest {}' : 'largest {}', axis) + (auto ? tr(' (empty = automatic)') : '');
         if (auto) e.placeholder = 'auto';
         e.addEventListener('change', () => this.applyScaleFields());
         e.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') this.applyScaleFields(); });
@@ -749,17 +751,17 @@ class SurfaceView extends GraphView {
     };
     panel.append(
       range('x'), range('y'), range('z', true),
-      button('Zoom out', 'Show twice as much of x and y', () => zoom(2)),
-      button('Zoom in', 'Show half as much of x and y', () => zoom(0.5)),
-      button('Reset', 'Back to the starting view', () => {
+      button(tr('Zoom out'), tr('Show twice as much of x and y'), () => zoom(2)),
+      button(tr('Zoom in'), tr('Show half as much of x and y'), () => zoom(0.5)),
+      button(tr('Reset'), tr('Back to the starting view'), () => {
         this.xr = [...this.spec.x_range]; this.yr = [...this.spec.y_range]; this.zFixed = null;
         for (const el of fields.z) el.value = '';
         panel.classList.remove('invalid');
         this.scheduleRedraw();
       }),
-      toggle('cut off spikes', 'With an automatic z range, leave out the tallest 2% of values (near poles)',
+      toggle(tr('cut off spikes'), tr('With an automatic z range, leave out the tallest 2% of values (near poles)'),
         () => this.clipSpikes, (v) => { this.clipSpikes = v; }),
-      toggle('true proportions', 'Draw x, y and z to the same scale instead of in a cube',
+      toggle(tr('true proportions'), tr('Draw x, y and z to the same scale instead of in a cube'),
         () => this.trueScale, (v) => { this.trueScale = v; }),
     );
     this.scaleFields = fields;
@@ -795,14 +797,14 @@ class SurfaceView extends GraphView {
       if (ok(z)) this.zFixed = z; else bad = true;
     }  // only one z box filled: wait for the other
     this.scalePanel.classList.toggle('invalid', bad);
-    this.scalePanel.title = bad ? 'Each range needs two numbers, the first smaller (pi and 2pi work).' : '';
+    this.scalePanel.title = bad ? tr('Each range needs two numbers, the first smaller (pi and 2pi work).') : '';
     this.scheduleRedraw();
   }
 
   async render() {
     const Plotly = window.Plotly;
     if (!Plotly) {
-      this.container.textContent = 'The plotting library did not load.';
+      this.container.textContent = tr('The plotting library did not load.');
       return;
     }
     if (this.params.length) this.buildSliders();

@@ -33,7 +33,7 @@ onmessage = async ({ data: m }) => {
   await started;
   current = m.id;
   try {
-    const json = m.op === 'convert' ? browser.convert(m.text, m.src) : browser.run(m.name, JSON.stringify(m.payload));
+    const json = m.op === 'convert' ? browser.convert(m.text, m.src, m.lang) : browser.run(m.name, JSON.stringify(m.payload));
     postMessage({ id: m.id, type: 'result', json });
   } catch (e) {
     // Python errors are caught in app/browser.py, so this is the engine itself failing

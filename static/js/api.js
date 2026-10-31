@@ -1,5 +1,6 @@
 // Thin wrappers around the local JSON API.
 import { browserApi } from './browser-api.js';
+import { LANG } from './i18n.js';
 
 async function post(url, body) {
   const r = await fetch(url, {
@@ -15,7 +16,7 @@ const serverApi = {
   compute: (body) => post('/api/compute', body),
   graph: (body) => post('/api/graph', body),
   cancel: () => post('/api/cancel'),
-  convert: (input, from) => post('/api/convert', { input, from }),
+  convert: (input, from) => post('/api/convert', { input, from, lang: LANG }),
   async history(query = '') {
     const r = await fetch('/api/history' + (query ? `?q=${encodeURIComponent(query)}` : ''));
     return (await r.json()).items;

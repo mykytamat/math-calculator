@@ -1,6 +1,7 @@
 // Rendering of math (via MathLive's static renderer), results and errors.
 import { convertLatexToMarkup } from '../vendor/mathlive/mathlive.min.mjs';
 import { renderGraph } from './graph.js';
+import { t } from './i18n.js';
 import { renderNumberLine } from './numberline.js';
 
 export function el(tag, attrs = {}, ...children) {
@@ -61,11 +62,11 @@ export async function copyText(text) {
   }
 }
 
-export function copyButton(latex, label = 'Copy LaTeX') {
-  const btn = el('button', { type: 'button', class: 'copy-btn', title: 'Copy this answer as LaTeX' }, label);
+export function copyButton(latex, label = t('Copy LaTeX')) {
+  const btn = el('button', { type: 'button', class: 'copy-btn', title: t('Copy this answer as LaTeX') }, label);
   btn.addEventListener('click', async () => {
     const ok = await copyText(latex);
-    btn.textContent = ok ? 'Copied' : 'Copy failed';
+    btn.textContent = ok ? t('Copied') : t('Copy failed');
     btn.classList.toggle('copied', ok);
     setTimeout(() => { btn.textContent = label; btn.classList.remove('copied'); }, 1400);
   });
@@ -82,7 +83,7 @@ const BADGE = {
 function badge(kind) {
   if (!kind || !BADGE[kind]) return null;
   const [cls, text] = BADGE[kind];
-  return el('span', { class: `badge ${cls}` }, text);
+  return el('span', { class: `badge ${cls}` }, t(text));
 }
 
 export function errorBlock(err) {
@@ -90,7 +91,7 @@ export function errorBlock(err) {
   if (err.title) box.append(el('div', { class: 'error-title' }, err.title));
   box.append(el('div', { class: 'error-msg' }, richText(err.message)));
   if (err.source !== undefined && err.span) {
-    const src = el('div', { class: 'error-src', title: 'The highlighted part could not be read' });
+    const src = el('div', { class: 'error-src', title: t('The highlighted part could not be read') });
     src.append(
       el('span', { class: 'read-ok' }, err.before ?? ''),
       el('mark', {}, err.at && err.at.length ? err.at : ' '),
@@ -121,8 +122,8 @@ export function resultCard(item, ctx = {}) {
       card.append(el('ul', { class: 'notes' }, item.notes.map((n) => el('li', {}, richText(n)))));
     }
     card.append(el('p', { class: 'muted graph-help' }, item.graph?.three_d
-      ? 'Drag to rotate, scroll to zoom, right-drag to move.'
-      : 'Drag to pan, scroll to zoom, double-click to reset. Filled dot = point included, hollow dot = not included.'));
+      ? t('Drag to rotate, scroll to zoom, right-drag to move.')
+      : t('Drag to pan, scroll to zoom, double-click to reset. Filled dot = point included, hollow dot = not included.')));
     // Plot after the card is in the page, so Plotly can measure its width.
     requestAnimationFrame(() => renderGraph(box, item.graph, { refetch: ctx.refetch }));
     return card;
@@ -130,7 +131,7 @@ export function resultCard(item, ctx = {}) {
   const card = el('article', { class: 'card' + (isError ? ' error' : '') });
   const head = el('div', { class: 'card-head' });
   if (item.input_latex) {
-    head.append(el('span', {}, 'Interpreted as'), math(item.input_latex, 'interp'));
+    head.append(el('span', {}, t('Interpreted as')), math(item.input_latex, 'interp'));
   }
   const b = badge(item.badge);
   if (b) head.append(b);
@@ -169,9 +170,9 @@ export function renderResponse(container, resp, ctx = {}) {
   container.replaceChildren();
   if (!resp.ok && resp.error) {
     const card = el('article', { class: 'card error' });
-    const title = { timeout: 'Timed out', cancelled: 'Stopped', parse: "Couldn't read the input",
-      math: 'Not possible' }[resp.error.kind]
-      ?? 'Error';
+    const title = { timeout: t('Timed out'), cancelled: t('Stopped'), parse: t("Couldn't read the input"),
+      math: t('Not possible') }[resp.error.kind]
+      ?? t('Error');
     card.append(el('div', { class: 'card-head' }, el('strong', {}, title),
       badge(resp.error.kind === 'parse' ? 'error' : 'error')));
     card.append(errorBlock(resp.error));
@@ -180,5 +181,5 @@ export function renderResponse(container, resp, ctx = {}) {
   }
   if (resp.warning) container.append(el('div', { class: 'warning-banner' }, richText(resp.warning)));
   for (const item of resp.results ?? []) container.append(resultCard(item, ctx));
-  if (!resp.results?.length) container.append(el('p', { class: 'muted' }, 'No result.'));
+  if (!resp.results?.length) container.append(el('p', { class: 'muted' }, t('No result.')));
 }

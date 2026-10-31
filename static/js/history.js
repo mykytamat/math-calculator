@@ -1,9 +1,10 @@
 // History sidebar: every calculation, click to re-run, ✎ to edit, × to delete.
 import { api } from './api.js';
+import { t } from './i18n.js';
 import { el, math } from './render.js';
 import { TABS } from './tabs.js';
 
-const TAB_LABEL = Object.fromEntries(TABS.map((t) => [t.id, t.label]));
+const TAB_LABEL = Object.fromEntries(TABS.map((tab) => [tab.id, t(tab.label)]));
 
 function timeLabel(iso) {
   const d = new Date(iso);
@@ -27,7 +28,7 @@ export class HistoryPanel {
       timer = setTimeout(() => this.refresh(), 200);
     });
     document.getElementById('history-clear').addEventListener('click', async () => {
-      if (!confirm('Delete the whole history?')) return;
+      if (!confirm(t('Delete the whole history?'))) return;
       await api.historyClear();
       this.refresh();
     });
@@ -49,13 +50,13 @@ export class HistoryPanel {
   }
 
   renderItem(it) {
-    const li = el('li', { class: 'history-item', title: 'Click to run again' });
+    const li = el('li', { class: 'history-item', title: t('Click to run again') });
     const meta = el('div', { class: 'h-meta' },
       el('span', {}, TAB_LABEL[it.tab] ?? it.tab),
       el('span', {}, '·'),
       el('span', {}, timeLabel(it.created_at)),
     );
-    if (it.status !== 'ok') meta.append(el('span', { class: `h-status ${it.status}` }, it.status));
+    if (it.status !== 'ok') meta.append(el('span', { class: `h-status ${it.status}` }, t(it.status)));
     li.append(meta);
     if (it.input_mode === 'latex') {
       const box = el('div', { class: 'h-input' });
@@ -65,8 +66,8 @@ export class HistoryPanel {
       li.append(el('div', { class: 'h-input plain' }, it.input));
     }
     if (it.summary) li.append(el('div', { class: 'h-result' }, '= ', math(it.summary, '')));
-    const edit = el('button', { type: 'button', title: 'Edit without running' }, '✎ edit');
-    const del = el('button', { type: 'button', title: 'Delete from history' }, '×');
+    const edit = el('button', { type: 'button', title: t('Edit without running') }, t('✎ edit'));
+    const del = el('button', { type: 'button', title: t('Delete from history') }, '×');
     edit.addEventListener('click', (e) => { e.stopPropagation(); this.closeMobile(); this.onEdit(it); });
     del.addEventListener('click', async (e) => {
       e.stopPropagation();

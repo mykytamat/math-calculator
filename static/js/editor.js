@@ -1,10 +1,12 @@
 // Input editor: a stack of MathLive fields (visual mode) or a textarea (plain text).
 import { MathfieldElement } from '../vendor/mathlive/mathlive.min.mjs';
+import { LANG, t } from './i18n.js';
 import { cleanLatex, copyText, el, math } from './render.js';
 
 MathfieldElement.fontsDirectory = new URL('../vendor/mathlive/fonts', import.meta.url).href;
 MathfieldElement.soundsDirectory = new URL('../vendor/mathlive/sounds', import.meta.url).href;
 MathfieldElement.keypressSound = null;
+MathfieldElement.locale = LANG;
 MathfieldElement.plonkSound = null;
 
 // Extra shortcuts typed as letters in the visual editor. ("if" is left as plain
@@ -77,7 +79,7 @@ const SHIFT = { label: '[shift]', width: 1 };
 const PHONE_KEYBOARD = [
   {
     label: '123',
-    tooltip: 'Numbers (Shift: y, degrees, eˣ, x², ⁿ√, ≠, 1/x, ∞, powers)',
+    tooltip: t('Numbers (Shift: y, degrees, eˣ, x², ⁿ√, ≠, 1/x, ∞, powers)'),
     layers: [{ id: 'mc-numbers', rows: [
       [key('x', 'x', ['y', 'y']), '[7]', '[8]', '[9]', '[/]', '[(]', '[)]'],
       // Shift+0 is MathLive's ∞, so Shift+π is the degree sign (30° in trigonometry).
@@ -92,7 +94,7 @@ const PHONE_KEYBOARD = [
   },
   {
     label: 'f(x)',
-    tooltip: 'Functions (Shift: arcsin, arccos, arctan, arcctg, sinh, cosh, eˣ, ∏, lg)',
+    tooltip: t('Functions (Shift: arcsin, arccos, arctan, arcctg, sinh, cosh, eˣ, ∏, lg)'),
     layers: [{ id: 'mc-functions', rows: [
       [fnKey(['sin'], ['arcsin']), fnKey(['cos'], ['arccos']), fnKey(['tan'], ['arctan']),
         fnKey(['ctg', '\\operatorname{ctg}'], ['arcctg', '\\operatorname{arcctg}']), fnKey(['sec'], ['sinh']),
@@ -168,12 +170,12 @@ class LineMenu {
   constructor() {
     this.field = null;
     const actions = [
-      ['Cut', () => this.copy(true)],
-      ['Copy', () => this.copy(false)],
-      ['Paste', () => this.paste()],
-      ['Select all', () => { this.field.executeCommand('selectAll'); this.field.focus(); }],
-      ['Clear line', () => { this.field.value = ''; this.field.focus(); }],
-      ['Cancel', () => {}],
+      [t('Cut'), () => this.copy(true)],
+      [t('Copy'), () => this.copy(false)],
+      [t('Paste'), () => this.paste()],
+      [t('Select all'), () => { this.field.executeCommand('selectAll'); this.field.focus(); }],
+      [t('Clear line'), () => { this.field.value = ''; this.field.focus(); }],
+      [t('Cancel'), () => {}],
     ];
     this.sheet = el('div', { class: 'line-menu', role: 'menu' }, actions.map(([label, fn]) => {
       const b = el('button', { type: 'button', role: 'menuitem' }, label);
@@ -244,7 +246,7 @@ export class Editor {
     for (const entry of TOOLBAR) {
       if (!entry) { bar.append(el('span', { class: 'sep' })); continue; }
       const [label, insert, title] = entry;
-      const btn = el('button', { type: 'button', title }, math(label, 'tb-math'));
+      const btn = el('button', { type: 'button', title: t(title) }, math(label, 'tb-math'));
       // Keep focus in the math field when clicking toolbar buttons.
       btn.addEventListener('mousedown', (e) => e.preventDefault());
       btn.addEventListener('click', () => this.insert(insert));
@@ -276,7 +278,7 @@ export class Editor {
   addLine(latex = '', focus = true, after = null) {
     const row = el('div', { class: 'mf-line' });
     const mf = new MathfieldElement();
-    mf.setAttribute('aria-label', 'Math input');
+    mf.setAttribute('aria-label', t('Math input'));
     mf.smartFence = true;
     mf.addEventListener('focusin', () => { this.lastFocused = mf; });
     mf.addEventListener('keydown', (e) => {
@@ -303,11 +305,11 @@ export class Editor {
       mf.insert(clean, { selectionMode: 'after' });
     }, { capture: true });
     mf.addEventListener('cut', fixCopiedText);
-    const remove = el('button', { type: 'button', class: 'remove-line', title: 'Remove this line' }, '×');
+    const remove = el('button', { type: 'button', class: 'remove-line', title: t('Remove this line') }, '×');
     remove.addEventListener('click', () => this.removeLine(row));
     row.append(el('span', { class: 'line-no' }), mf);
     if (TOUCH) {
-      const more = el('button', { type: 'button', class: 'line-menu-btn', title: 'Cut, copy, paste' }, '⋯');
+      const more = el('button', { type: 'button', class: 'line-menu-btn', title: t('Cut, copy, paste') }, '⋯');
       more.addEventListener('click', () => (lineMenu ??= new LineMenu()).open(mf));
       row.append(more);
     }

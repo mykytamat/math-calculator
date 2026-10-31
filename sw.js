@@ -2,7 +2,7 @@
 // placeholders). Every file of the app is stored on the first visit and then served from that
 // store, so the calculator works without internet. A new build has a new VERSION: the next
 // visit stores its files and drops the old ones.
-const VERSION = "78a0cfe7a93b";
+const VERSION = "dd538a584ba2";
 const FILES = [
  "./",
  "NOTICES.txt",
@@ -31,8 +31,10 @@ const FILES = [
  "static/js/engine-worker.js",
  "static/js/graph.js",
  "static/js/history.js",
+ "static/js/i18n.js",
  "static/js/numberline.js",
  "static/js/render.js",
+ "static/js/ru.js",
  "static/js/tabs.js",
  "static/vendor/mathlive/LICENSE.txt",
  "static/vendor/mathlive/fonts/KaTeX_AMS-Regular.woff2",

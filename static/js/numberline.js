@@ -5,6 +5,8 @@
 // repeated across the visible range; the copy at k = 0 carries exact labels
 // such as π/6, the others decimals.
 
+import { t } from './i18n.js';
+
 const COLOR = '#2f5bea';
 
 function cssVar(name, fallback) {
@@ -79,7 +81,7 @@ export class NumberLineView {
         annotations.push({ x, y: 0.55, text: label(p.label, x), showarrow: false, font: { color: text, size: 12 } });
       }
     }
-    for (const [pts, fill, what] of [[closed, COLOR, 'included'], [open, bg, 'not included']]) {
+    for (const [pts, fill, what] of [[closed, COLOR, t('included')], [open, bg, t('not included')]]) {
       if (!pts.x.length) continue;
       data.push({
         type: 'scatter', mode: 'markers', x: pts.x, y: pts.x.map(() => 0), text: pts.t, showlegend: false,
